@@ -1,0 +1,54 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import GPy
+from sklearn.model_selection import train_test_split
+
+# Historical price data
+prices = [
+1,0,2,0,3,0,1,0,0,0,1,3,0,0,2,4,3,1,2,0,0,0,0,0,3,1,2,0,0,0,3,0
+
+]
+
+# Create input feature
+X = np.arange(1, len(prices) + 1).reshape(-1, 1)
+
+# Create output target
+y = np.array(prices).reshape(-1, 1)
+
+# Visualize historical prices
+plt.plot(X, y, 'o', label='Historical Prices')
+plt.xlabel('Day')
+plt.ylabel('Price')
+plt.legend()
+plt.title('Historical Price Data')
+plt.show()
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Create the GP model with an RBF kernel and noise term
+kernel = GPy.kern.RBF(input_dim=1) + GPy.kern.White(input_dim=1)
+model = GPy.models.GPRegression(X_train, y_train, kernel)
+
+# Optimize the model
+model.optimize()
+
+# Evaluate the model on the testing set
+mean, variance = model.predict(X_test)
+
+# Visualize the model's performance on the testing set
+plt.plot(X_test, y_test, 'o', label='True Prices')
+plt.plot(X_test, mean, 'r-', label='Mean Prediction')
+plt.fill_between(X_test.flatten(), (mean - np.sqrt(variance)).flatten(), (mean + np.sqrt(variance)).flatten(),
+                 alpha=0.2, color='orange', label='Uncertainty')
+plt.xlabel('Day')
+plt.ylabel('Price')
+plt.legend()
+plt.title('GP Model Performance on Testing Set')
+plt.show()
+
+# Forecast tomorrow's price with uncertainty
+tomorrow = np.array([[len(prices) + 1]])
+forecast, variance = model.predict(tomorrow)
+
+print("Tomorrow's forecasted price:", forecast[0, 0])
+print("Variance in the forecast:", variance[0, 0])
